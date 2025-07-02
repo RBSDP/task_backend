@@ -1,10 +1,10 @@
 // index files imports all the files needed to start the project
 // it starts the server
 
-import app from "./app";
+import app from "./app.js";
 
 import dotenv from "dotenv";
-import connectDB from "./db/db";
+import connectDB from "./db/db.js"
 dotenv.config({
     path : './.env'
 }) ;

@@ -109,4 +109,4 @@ const forgotPasswordMailGenContent = (username, passwordResetUrl) => {
     
     
     
-    }
+}
