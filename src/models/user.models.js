@@ -90,7 +90,7 @@ userSchema.methods.isPasswordCorrect = async function (password) {
     
 }
 
-userSchema.generateAccessToken = function(){
+userSchema.methods.generateAccessToken = function(){
 
     return jwt.sign(
 
@@ -108,7 +108,7 @@ userSchema.generateAccessToken = function(){
 
 }
 
-userSchema.generateRefreshToken = function(){
+userSchema.methods.generateRefreshToken = function(){
 
     return jwt.sign(
 
@@ -125,7 +125,7 @@ userSchema.generateRefreshToken = function(){
 }
 
 
-userSchema.generateTemporaryToken = function(){
+userSchema.methods.generateTemporaryToken = function(){
     const unHashedToken = crypto.randomBytes(20).toString("hex")
 
     const hashedToken = crypto.createHash("sha256").update(unHashedToken).digest("hex")
