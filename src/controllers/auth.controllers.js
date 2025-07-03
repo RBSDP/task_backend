@@ -102,4 +102,75 @@ const registerUser = asyncHandler(async (req, res) => {
     // TODO: Send email (future enhancement)
 });
 
-export { registerUser };
+
+
+
+const loginUser = asyncHandler(async (req, res) => {
+
+    
+    const {email, password} = req.body;
+
+    if(!email || !password){
+        throw new ApiError(400,"email and password required")
+
+    }
+
+    const user = await User.findOne({email})
+    if(!user){
+        throw new ApiError(400,"error connecting DB")
+    }
+
+    const isMatch =  user.isPasswordCorrect()
+    if(!isMatch){
+        throw new ApiError(400,"password is incorrect")
+    }
+
+    const accessToken = user.generateAccessToken()
+
+    const refreshToken = user.generateRefreshToken()
+    user.refreshToken = refreshToken
+    await user.save({ validateBeforeSave: false })
+
+    const loggedUser = await User.findById(user._id).select('-password -refreshToken')
+
+    const cookieOptions = {
+            httpOnly : true,
+            secure : true,
+            maxAge : 24*60*60*1000
+
+    }
+
+    res.status(200).cookie("accessToken",accessToken,cookieOptions).cookie("refreshToken",refreshToken,cookieOptions).json(
+
+        new ApiResponse(200,{user:loggedUser,refreshToken,accessToken})
+    )
+
+})
+
+
+const logoutUser = asyncHandler(async(req,res) => { 
+
+    await User.findByIdAndUpdate(req.user._id,{
+        $unset : {refreshToken : ""}
+    },{
+        new:true, validateBeforeSave : false
+    })
+
+
+    const cookieOptions = { 
+        httpOnly : true,
+        secure : true
+    }
+
+    res.status(200).clearCookie("refreshToken",cookieOptions).clearCookie('accessToken',cookieOptions).json(new ApiResponse(200, {},"userloggged out successfully" ))
+
+})
+
+const getUser = asyncHandler(async (req,res) => {
+
+    return res.status(200).json(new ApiResponse(200,req.user, "data sent successfully"))
+
+})
+export { registerUser , loginUser , logoutUser, getUser};
+
+ 
