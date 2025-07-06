@@ -64,6 +64,26 @@ import { User } from '../models/user.models.js';
 import { ApiError } from '../utils/api-error.js';
 import { ApiResponse } from "../utils/api-responce.js";
 
+import jwt from "jsonwebtoken"
+
+const generateAccessAndRefreshToken = async (userId) => {
+
+        try {
+            const user = await User.findById(userId)
+        const refreshToken = user.generateAccessToken()
+        const accessToken = user.generateRefreshToken()
+
+        user.refreshToken = refreshToken
+        user.save({validateBeforeSave : false})
+
+
+        return {refreshToken,accessToken}
+        } catch (error) {
+            new ApiError(404, "error while generating access token and refresh token")
+        }
+
+}
+
 const registerUser = asyncHandler(async (req, res) => {
     const { email, password, username, role, fullname } = req.body;
 
@@ -120,7 +140,7 @@ const loginUser = asyncHandler(async (req, res) => {
         throw new ApiError(400,"error connecting DB")
     }
 
-    const isMatch =  user.isPasswordCorrect()
+    const isMatch =  user.isPasswordCorrect(password)
     if(!isMatch){
         throw new ApiError(400,"password is incorrect")
     }
@@ -150,7 +170,13 @@ const loginUser = asyncHandler(async (req, res) => {
 
 const logoutUser = asyncHandler(async(req,res) => { 
 
-    await User.findByIdAndUpdate(req.user._id,{
+    const incomingRefreshToken = req.cookies.refreshToken || req.body.refreshToken
+    // comparing the refresh token
+    const decoded = jwt.verify(incomingRefreshToken,process.env.REFRESH_TOKEN_SECRET)
+
+    
+
+    await User.findByIdAndUpdate(decoded._id,{
         $unset : {refreshToken : ""}
     },{
         new:true, validateBeforeSave : false
@@ -171,6 +197,24 @@ const getUser = asyncHandler(async (req,res) => {
     return res.status(200).json(new ApiResponse(200,req.user, "data sent successfully"))
 
 })
-export { registerUser , loginUser , logoutUser, getUser};
+
+
+const refreshAccessToken = asyncHandler(async(req, res) => {
+
+    const incomingRefreshToken = req.cookies.refreshToken || req.body.refreshToken
+    // comparing the refresh token
+    const decoded = jwt.verify(incomingRefreshToken,process.env.REFRESH_TOKEN_SECRET)
+
+    const user = await User.findById(decoded._id)
+
+    if(!user){
+
+        
+    }
+    const {accessToken,refreshToken} = generateAccessAndRefreshToken(decoded._id)
+
+
+})
+export { registerUser , loginUser , logoutUser, getUser, refreshAccessToken};
 
  
